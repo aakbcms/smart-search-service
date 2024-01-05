@@ -1,11 +1,13 @@
-FROM danskernesdigitalebibliotek/php8.1-fpm-base AS APP_BUILDER
+FROM itkdev/php8.1-fpm:alpine AS APP_BUILDER
 LABEL maintainer="ITK Dev <itkdev@mkb.aarhus.dk>"
 
 ARG APP_VERSION="develop"
 ENV APP_PATH=/var/www/html
 
+USER root
+
 # Move site into the container.
-ADD https://github.com/danskernesdigitalebibliotek/smart-search-service/archive/${APP_VERSION}.tar.gz /tmp/app.tar
+ADD https://github.com/aakbcms/smart-search-service/archive/${APP_VERSION}.tar.gz /tmp/app.tar
 RUN tar -zxf /tmp/app.tar --strip-components=1 -C ${APP_PATH} \
     && rm /tmp/app.tar
 
@@ -15,7 +17,9 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 WORKDIR ${APP_PATH}
 
 ## Install assets, which requires a HACK as redis is not available (should be removed later on).
-RUN APP_ENV=github_actions composer install --no-dev -o --no-scripts --classmap-authoritative \
+ENV COMPOSER_ALLOW_SUPERUSER=1 \
+    APP_ENV=github_actions
+RUN composer install --no-dev -o --no-scripts --classmap-authoritative \
     && APP_ENV=github_actions composer docker-build \
     && rm -rf infrastructure \
     && composer clear-cache
@@ -23,10 +27,12 @@ RUN APP_ENV=github_actions composer install --no-dev -o --no-scripts --classmap-
 ####
 ## Build main application image.
 ####
-FROM danskernesdigitalebibliotek/php8.1-fpm-base
+FROM itkdev/php8.1-fpm:alpine
 LABEL maintainer="ITK Dev <itkdev@mkb.aarhus.dk>"
 
 ENV APP_PATH=/var/www/html
+
+USER root
 
 # Install the application.
 COPY --from=APP_BUILDER ${APP_PATH} ${APP_PATH}

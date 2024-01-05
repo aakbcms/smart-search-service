@@ -1,5 +1,5 @@
 ARG VERSION="latest"
-FROM danskernesdigitalebibliotek/smart-search-service:${VERSION} as APPLICATION
+FROM itkdev/smart-search-service:${VERSION} as APPLICATION
 
 FROM nginxinc/nginx-unprivileged:alpine
 ARG APP_VERSION
